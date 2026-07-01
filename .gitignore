@@ -26,6 +26,11 @@ node_modules/
 desktop/target/
 desktop/dist/
 desktop/src-tauri/target/
+desktop/src-tauri/gen/
+
+# PyInstaller build artifacts
+/build/
+*.manifest
 
 # Editors / OS
 .vscode/
