@@ -1,0 +1,34 @@
+# Secrets / config
+.env
+.env.*
+!.env.example
+
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.eggs/
+build/
+dist/
+.venv/
+venv/
+env/
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+
+# Session data (runtime state)
+/sessions/
+*.session.json
+
+# Node / Tauri (desktop, M4+)
+node_modules/
+desktop/target/
+desktop/dist/
+desktop/src-tauri/target/
+
+# Editors / OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
