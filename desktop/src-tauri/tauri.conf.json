@@ -1,0 +1,35 @@
+{
+  "$schema": "https://schema.tauri.app/config/2",
+  "productName": "agent-me",
+  "version": "0.0.1",
+  "identifier": "com.agentme.desktop",
+  "build": {
+    "frontendDist": "../frontend"
+  },
+  "app": {
+    "windows": [
+      {
+        "title": "agent-me",
+        "width": 1000,
+        "height": 720,
+        "minWidth": 620,
+        "minHeight": 480,
+        "visible": false
+      }
+    ],
+    "security": {
+      "comment": "Local app talking to the kernel on 127.0.0.1; CSP disabled so the webview can fetch/WebSocket the kernel. Tighten before any distribution.",
+      "csp": null
+    }
+  },
+  "bundle": {
+    "active": true,
+    "targets": "all",
+    "icon": [
+      "icons/32x32.png",
+      "icons/128x128.png",
+      "icons/128x128@2x.png",
+      "icons/icon.png"
+    ]
+  }
+}

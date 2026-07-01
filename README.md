@@ -7,10 +7,11 @@ REPL and, later, a **Tauri desktop app**.
 See [DESIGN.md](DESIGN.md) for the full design and [AGENT.md](AGENT.md) for how the
 agent works on this repo.
 
-> **Status: M3** — everything in M2, now across four provider adapters selectable by a
-> single config switch (`AGENT_PROVIDER`): Anthropic, OpenAI, LM Studio, and Ollama. The
-> agent loop, tools, and MCP are all provider-agnostic. The Tauri desktop shell (M4) is
-> next. See DESIGN.md §7.
+> **Status: M4** — everything in M3 plus a desktop chat UI: the kernel serves a
+> chat-first web frontend (streaming, tool calls, permission prompts) and a Tauri shell
+> spawns the kernel as a sidecar and hosts it. Four providers via `AGENT_PROVIDER`.
+> Desktop polish + kernel-as-MCP-server (M5) is next. See DESIGN.md §7 and
+> [desktop/README.md](desktop/README.md).
 
 ## Layout
 
@@ -25,7 +26,9 @@ src/
     mcp/              # hand-rolled MCP stdio client + manager   [server: M5]
     session/          # session store (file-based for now)
   agent_cli/          # REPL client over the kernel's WS API
-desktop/              # Tauri app                                [M4]
+desktop/              # Tauri desktop shell
+  frontend/           # chat-first web UI (served by the kernel; bundled by Tauri)
+  src-tauri/          # Rust shell: kernel sidecar lifecycle
 tests/
 ```
 
@@ -42,6 +45,10 @@ agent-kernel
 # terminal 2 — start the REPL
 agent
 ```
+
+Prefer a window? The kernel also serves the chat UI at `http://127.0.0.1:8765/app/`
+(open it in a browser), and the Tauri shell wraps that same UI — see
+[desktop/README.md](desktop/README.md).
 
 The exit criterion for M0: a real, token-streamed conversation with Claude through the
 CLI.
