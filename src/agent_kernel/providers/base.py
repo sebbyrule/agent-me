@@ -10,6 +10,7 @@ yield the kernel's internal `Event` stream.
 
 from __future__ import annotations
 
+import json
 from abc import ABC, abstractmethod
 from typing import Any, AsyncIterator
 
@@ -18,6 +19,16 @@ from ..events import Event
 
 class ProviderError(RuntimeError):
     """Raised when a provider cannot fulfill a request (auth, network, etc.)."""
+
+
+def stringify_tool_result(result: Any) -> str:
+    """Render a tool result as the text both provider wire formats expect."""
+    if isinstance(result, str):
+        return result
+    try:
+        return json.dumps(result, ensure_ascii=False, default=str)
+    except (TypeError, ValueError):
+        return str(result)
 
 
 class Provider(ABC):

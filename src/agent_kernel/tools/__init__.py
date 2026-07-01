@@ -2,6 +2,7 @@
 MCP-discovered tools in M2, both through the same `ToolRegistry`.
 """
 
+from .native import register_native_tools
 from .registry import Tool, ToolRegistry
 
-__all__ = ["Tool", "ToolRegistry"]
+__all__ = ["Tool", "ToolRegistry", "register_native_tools"]

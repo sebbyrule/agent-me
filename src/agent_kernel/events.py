@@ -41,12 +41,38 @@ class ToolCallResult:
 
 
 @dataclass
+class PermissionRequest:
+    """The kernel is asking the client to confirm a risky tool call before it
+    runs (DESIGN.md §8). The client replies with a `permission_response` message
+    carrying the same `id` and an `approved` boolean.
+    """
+
+    id: str
+    name: str
+    risk: str
+    arguments: dict[str, Any] = field(default_factory=dict)
+    type: Literal["permission_request"] = "permission_request"
+
+
+@dataclass
 class MessageComplete:
-    """A full assistant turn finished."""
+    """One provider call finished (there may be more within a turn if the model
+    requested tools). `stop_reason` reflects the provider's stop reason.
+    """
 
     text: str
     stop_reason: str | None = None
     type: Literal["message_complete"] = "message_complete"
+
+
+@dataclass
+class TurnComplete:
+    """The whole user turn is done — no further provider calls or tool rounds.
+    Frontends treat this as the end-of-turn marker.
+    """
+
+    text: str
+    type: Literal["turn_complete"] = "turn_complete"
 
 
 @dataclass
@@ -57,7 +83,15 @@ class ErrorEvent:
     type: Literal["error"] = "error"
 
 
-Event = TextDelta | ToolCallStart | ToolCallResult | MessageComplete | ErrorEvent
+Event = (
+    TextDelta
+    | ToolCallStart
+    | ToolCallResult
+    | PermissionRequest
+    | MessageComplete
+    | TurnComplete
+    | ErrorEvent
+)
 
 
 def to_wire(event: Event) -> dict[str, Any]:

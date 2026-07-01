@@ -16,6 +16,7 @@ def _config(**overrides) -> Config:
         lmstudio_base_url="http://localhost:1234/v1",
         lmstudio_model="local-model",
         lmstudio_api_key="lm-studio",
+        tool_policy="ask",
         host="127.0.0.1",
         port=8765,
         session_dir=__import__("pathlib").Path("."),

@@ -11,6 +11,8 @@ from __future__ import annotations
 from dataclasses import dataclass
 from typing import Any, Awaitable, Callable
 
+from ..permissions import RiskLevel
+
 # A handler takes parsed arguments and returns a JSON-serializable result.
 ToolHandler = Callable[[dict[str, Any]], Awaitable[Any]]
 
@@ -21,6 +23,8 @@ class Tool:
     description: str
     input_schema: dict[str, Any]
     handler: ToolHandler
+    #: How risky the tool is, driving the permission policy (DESIGN.md §8).
+    risk: RiskLevel = RiskLevel.READ
     #: Origin of the tool: "native" or the MCP server name it came from.
     source: str = "native"
 

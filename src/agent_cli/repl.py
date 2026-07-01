@@ -65,8 +65,26 @@ class ReplClient:
                     printed_prefix = True
                 sys.stdout.write(event["text"])
                 sys.stdout.flush()
+            elif etype == "tool_call_start":
+                printed_prefix = False
+                args = json.dumps(event.get("arguments", {}))
+                sys.stdout.write(f"\n  ⚙ {event['name']}({args})\n")
+                sys.stdout.flush()
+            elif etype == "tool_call_result":
+                mark = "✗" if event.get("is_error") else "→"
+                sys.stdout.write(f"  {mark} {_short(event.get('result'))}\n")
+                sys.stdout.flush()
+            elif etype == "permission_request":
+                approved = await self._prompt_permission(event)
+                await ws.send(
+                    _json_dumps({"id": event["id"], "approved": approved})
+                )
             elif etype == "message_complete":
-                sys.stdout.write("\n\n")
+                # One provider call finished; more tool rounds may follow.
+                sys.stdout.write("\n")
+                sys.stdout.flush()
+            elif etype == "turn_complete":
+                sys.stdout.write("\n")
                 sys.stdout.flush()
                 return
             elif etype == "error":
@@ -74,11 +92,28 @@ class ReplClient:
                 sys.stdout.flush()
                 return
 
+    async def _prompt_permission(self, event: dict) -> bool:
+        args = _json_dumps(event.get("arguments", {}))
+        prompt = (
+            f"\n  ⚠ allow {event['risk']} tool '{event['name']}'({args})? [y/N] "
+        )
+        answer = await asyncio.to_thread(input, prompt)
+        return answer.strip().lower() in ("y", "yes")
+
 
 def _json_dumps(obj: dict) -> str:
     import json
 
     return json.dumps(obj)
+
+
+def _short(result, limit: int = 300) -> str:
+    """One-line, truncated rendering of a tool result for the REPL."""
+    import json
+
+    text = result if isinstance(result, str) else json.dumps(result, default=str)
+    text = " ".join(text.split())
+    return text if len(text) <= limit else text[:limit] + "…"
 
 
 def run() -> None:

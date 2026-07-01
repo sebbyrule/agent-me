@@ -7,8 +7,9 @@ REPL and, later, a **Tauri desktop app**.
 See [DESIGN.md](DESIGN.md) for the full design and [AGENT.md](AGENT.md) for how the
 agent works on this repo.
 
-> **Status: M0** — kernel skeleton with an Anthropic-only streaming loop and a minimal
-> CLI REPL. No tools or MCP yet (those are M1/M2). See DESIGN.md §7 for the roadmap.
+> **Status: M1** — streaming agent loop with native tools (file read/write/list, shell
+> exec), parallel tool calls, and a permission layer that confirms risky calls. Two
+> provider adapters (Anthropic + LM Studio). MCP is next (M2). See DESIGN.md §7.
 
 ## Layout
 
@@ -17,8 +18,9 @@ src/
   agent_kernel/       # the kernel (long-running process)
     api/              # FastAPI HTTP/WS surface
     agent/            # provider-agnostic agent loop
-    providers/        # provider adapters (Anthropic only for now)
-    tools/            # tool registry (native + MCP-discovered)  [grows in M1]
+    providers/        # provider adapters (Anthropic + LM Studio)
+    permissions.py    # tool risk levels + permission policy
+    tools/            # tool registry + native tools (file/shell)
     mcp/              # hand-rolled MCP client/server            [grows in M2/M5]
     session/          # session store (file-based for now)
   agent_cli/          # REPL client over the kernel's WS API
@@ -59,6 +61,20 @@ LMSTUDIO_MODEL=local-model
 The provider is chosen by `AGENT_PROVIDER`; nothing else in the kernel or CLI changes.
 > This adapter was added ahead of its planned M3 slot as a deliberate, documented
 > deviation — see AGENT.md §4.
+
+## Tools & permissions
+
+The agent has native tools: `read_file`, `list_dir` (read), `write_file` (write), and
+`run_shell` (exec). Each declares a risk level. The permission policy
+(`AGENT_TOOL_POLICY`) decides what happens:
+
+- `ask` (default) — reads run automatically; writes and shell exec prompt for
+  confirmation in the REPL before running.
+- `allow` — auto-approve everything (headless runs).
+- `deny` — refuse all non-read tools.
+
+The kernel owns the policy; the frontend owns the confirmation UX (a REPL `[y/N]`
+prompt now, a dialog in the Tauri app later). See DESIGN.md §8.
 
 ## API surface (kernel)
 
