@@ -23,6 +23,12 @@ class Session:
     def add_message(self, role: str, content: Any) -> None:
         self.messages.append({"role": role, "content": content})
 
+    def append(self, message: dict[str, Any]) -> None:
+        """Append a full, provider-neutral message dict (e.g. an assistant turn
+        carrying `tool_calls`, or a `tool` message carrying `tool_results`).
+        """
+        self.messages.append(message)
+
 
 class SessionStore:
     def __init__(self, session_dir: Path) -> None:

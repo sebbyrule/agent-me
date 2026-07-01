@@ -48,8 +48,11 @@ criteria are met and demonstrated.**
 | **M4** | Tauri shell spawns kernel as sidecar; WebView chat UI | Same session functionality as CLI, in a desktop window |
 | **M5** | File viewer pane; session persistence across restarts; kernel as MCP *server* | — |
 
-**We are currently at: M0 → M1.** A second provider (LM Studio) was added ahead of its
-M3 slot — see the deviation note in §4.
+**We are currently at: M1 (built, pending a live end-to-end run) → M2.** The tool loop,
+native tools, and permission layer are implemented and tested end-to-end through the
+API with a scripted provider; the final confirmation is a live REPL run against a real
+model (LM Studio locally, or Anthropic with a key). A second provider (LM Studio) was
+added ahead of its M3 slot — see the deviation note in §4.
 
 ## 4. Anti-scope-creep rules (DESIGN.md §9)
 

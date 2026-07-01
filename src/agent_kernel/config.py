@@ -25,6 +25,8 @@ class Config:
     lmstudio_base_url: str
     lmstudio_model: str
     lmstudio_api_key: str
+    # Tool permission policy: "ask" (default), "allow", or "deny" (DESIGN.md §8).
+    tool_policy: str
     host: str
     port: int
     session_dir: Path
@@ -41,6 +43,7 @@ class Config:
             lmstudio_model=os.getenv("LMSTUDIO_MODEL", "local-model"),
             # LM Studio ignores the key, but the OpenAI-style header needs a value.
             lmstudio_api_key=os.getenv("LMSTUDIO_API_KEY", "lm-studio"),
+            tool_policy=os.getenv("AGENT_TOOL_POLICY", "ask").strip().lower(),
             host=os.getenv("KERNEL_HOST", "127.0.0.1"),
             port=int(os.getenv("KERNEL_PORT", "8765")),
             session_dir=Path(os.getenv("SESSION_DIR", "./sessions")).resolve(),
