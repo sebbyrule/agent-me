@@ -27,6 +27,7 @@ def _config(**overrides) -> Config:
         host="127.0.0.1",
         port=8765,
         session_dir=__import__("pathlib").Path("."),
+        workspace_dir=__import__("pathlib").Path("."),
     )
     return dataclasses.replace(base, **overrides)
 

@@ -48,22 +48,27 @@ criteria are met and demonstrated.**
 | **M4** | Tauri shell spawns kernel as sidecar; WebView chat UI | Same session functionality as CLI, in a desktop window |
 | **M5** | File viewer pane; session persistence across restarts; kernel as MCP *server* | — |
 
-**We are currently at: M4 complete → M5.** M0–M3 as before. M4 adds a chat-first web UI
-(`desktop/frontend/`, vanilla JS) that the kernel serves at `/app` (CORS enabled so
-Tauri's `tauri://` webview can also reach it), plus a Tauri Rust shell
-(`desktop/src-tauri/`) that spawns the kernel as a sidecar, health-checks it, shows the
-window, and kills the kernel on close. Sidecar packaging decision (§8): system Python
-via `python -m agent_kernel`, overridable with `AGENT_KERNEL_CMD`; bundling deferred.
+**We are currently at: M5 complete — all DESIGN.md §7 milestones done.** M0–M4 as before.
+M5 adds three things:
+- **MCP server** (`agent_kernel/mcp/server.py`, run via `agent-mcp-server`): the mirror of
+  the M2 client — exposes the kernel's native tools to other MCP clients over stdio.
+  Read-only by default; `AGENT_MCP_EXPOSE_ALL=1` opts into write/exec.
+- **File viewer**: read-only `/files/tree` + `/files/read` (sandboxed to `WORKSPACE_DIR`)
+  and a toggleable tree+preview pane in the desktop UI.
+- **Session endpoints**: `/sessions` and `/session/{id}` over the file-based store, so
+  sessions survive kernel restarts.
 
-Live verification status: the web UI was driven live against LM Studio in a browser —
-streaming, a `write_file` tool call, the Allow/Deny permission prompt, tool result, and
-final answer (M4 exit criterion: same session functionality as the CLI). The Rust shell
-is authored to spec but **not compiled here** — building the native window needs
-`npm install` + `npm run tauri dev` on a machine with the Rust toolchain and WebView2.
+Live/verified: MCP server proven by a full round-trip from our own M2 client (and a raw
+stdin pipe); the file viewer driven live in the browser (tree, lazy expand, preview,
+coexists with chat); session persistence covered by a restart test. 74 tests pass.
 
-**Next: M5** — desktop polish (toggleable read-only file/project viewer pane), session
-persistence across restarts, and exposing the kernel's own tools as an MCP *server* for
-other clients (DESIGN.md §7; the hand-rolled MCP server stub already exists).
+Reminder of the one standing gap (unchanged from M4): the Tauri **Rust shell**
+(`desktop/src-tauri/`) is authored to spec but not compiled here — the native window needs
+`npm install` + `npm run tauri dev` with the Rust toolchain and WebView2. Everything the
+window hosts (the web UI) is verified live via the kernel-served copy.
+
+**No further milestones.** Future work would be distribution polish (sidecar packaging
+per §8, real app icons) and hardening — not new milestones.
 
 ## 4. Anti-scope-creep rules (DESIGN.md §9)
 

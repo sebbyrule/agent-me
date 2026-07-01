@@ -6,5 +6,6 @@ kernel's own tools.
 
 from .client import MCPClient, MCPError
 from .manager import MCPManager
+from .server import build_registry, serve
 
-__all__ = ["MCPClient", "MCPError", "MCPManager"]
+__all__ = ["MCPClient", "MCPError", "MCPManager", "build_registry", "serve"]

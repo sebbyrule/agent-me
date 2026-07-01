@@ -58,3 +58,16 @@ class SessionStore:
 
     def exists(self, session_id: str) -> bool:
         return self._path(session_id).exists()
+
+    def list_sessions(self) -> list[dict[str, Any]]:
+        """Summaries of all persisted sessions (survives kernel restarts)."""
+        out: list[dict[str, Any]] = []
+        for path in sorted(self._dir.glob("*.session.json")):
+            try:
+                data = json.loads(path.read_text(encoding="utf-8"))
+            except (json.JSONDecodeError, OSError):
+                continue
+            out.append(
+                {"id": data.get("id"), "messages": len(data.get("messages", []))}
+            )
+        return out

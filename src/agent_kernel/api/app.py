@@ -45,6 +45,16 @@ class MCPConnectRequest(BaseModel):
     cwd: str | None = None
 
 
+def _safe_path(root: Path, rel: str) -> Path | None:
+    """Resolve `rel` under `root`, refusing anything that escapes it (M5 file
+    viewer is read-only and sandboxed to the workspace root)."""
+    target = (root / rel).resolve()
+    root = root.resolve()
+    if target == root or target.is_relative_to(root):
+        return target
+    return None
+
+
 def _frontend_dir() -> Path | None:
     """Locate the desktop chat UI so the kernel can serve it (M4). The kernel
     stays usable headless if the directory is absent."""
@@ -151,6 +161,54 @@ def create_app(config: Config | None = None) -> FastAPI:
                 for t in tools.list()
             ]
         }
+
+    @app.get("/sessions")
+    async def list_sessions() -> dict[str, list]:
+        # Persisted sessions survive kernel restarts (DESIGN.md §4.1); a client
+        # can reconnect to any of these ids.
+        return {"sessions": get_state().store.list_sessions()}
+
+    @app.get("/session/{session_id}")
+    async def get_session(session_id: str):
+        session = get_state().store.get(session_id)
+        if session is None:
+            return JSONResponse(status_code=404, content={"detail": "Unknown session"})
+        return {"id": session.id, "messages": session.messages}
+
+    @app.get("/files/tree")
+    async def files_tree(path: str = "") -> JSONResponse:
+        root = get_state().config.workspace_dir
+        target = _safe_path(root, path)
+        if target is None or not target.is_dir():
+            return JSONResponse(status_code=404, content={"detail": "Not a directory"})
+        entries = []
+        for p in sorted(
+            target.iterdir(), key=lambda x: (x.is_file(), x.name.lower())
+        ):
+            entries.append(
+                {
+                    "name": p.name,
+                    "path": p.relative_to(root).as_posix(),
+                    "type": "dir" if p.is_dir() else "file",
+                }
+            )
+        return JSONResponse(content={"path": path, "entries": entries})
+
+    @app.get("/files/read")
+    async def files_read(path: str) -> JSONResponse:
+        root = get_state().config.workspace_dir
+        target = _safe_path(root, path)
+        if target is None or not target.is_file():
+            return JSONResponse(status_code=404, content={"detail": "Not a file"})
+        limit = 200_000
+        data = target.read_bytes()
+        return JSONResponse(
+            content={
+                "path": path,
+                "content": data[:limit].decode("utf-8", errors="replace"),
+                "truncated": len(data) > limit,
+            }
+        )
 
     @app.post("/mcp/connect")
     async def mcp_connect(request: MCPConnectRequest) -> JSONResponse:

@@ -211,6 +211,92 @@ function autosize() {
   input.style.height = Math.min(input.scrollHeight, 160) + "px";
 }
 
+// --- File viewer pane (M5) — read-only tree + preview over /files/* -------
+
+const sidebar = el("sidebar");
+const tree = el("tree");
+const preview = el("preview");
+let treeLoaded = false;
+
+el("filesToggle").addEventListener("click", () => {
+  const showing = sidebar.classList.toggle("hidden") === false;
+  el("filesToggle").classList.toggle("active", showing);
+  if (showing && !treeLoaded) {
+    treeLoaded = true;
+    loadDir("", tree, 0);
+  }
+});
+
+async function loadDir(path, container, depth) {
+  try {
+    const res = await fetch(`${KERNEL}/files/tree?path=${encodeURIComponent(path)}`);
+    const data = await res.json();
+    for (const entry of data.entries) {
+      container.appendChild(entry.type === "dir" ? dirNode(entry, depth) : fileNode(entry, depth));
+    }
+  } catch (e) {
+    /* ignore tree errors */
+  }
+}
+
+function rowPad(depth) {
+  return 8 + depth * 14;
+}
+
+function dirNode(entry, depth) {
+  const wrap = document.createElement("div");
+  const row = document.createElement("div");
+  row.className = "node";
+  row.style.paddingLeft = rowPad(depth) + "px";
+  row.innerHTML = `<span class="twist">▸</span><span class="icon icon--dir">▉</span><span class="label"></span>`;
+  row.querySelector(".label").textContent = entry.name;
+  const children = document.createElement("div");
+  children.className = "children";
+  children.style.display = "none";
+  let loaded = false;
+  row.addEventListener("click", () => {
+    const open = children.style.display === "none";
+    children.style.display = open ? "block" : "none";
+    row.querySelector(".twist").textContent = open ? "▾" : "▸";
+    if (open && !loaded) {
+      loaded = true;
+      loadDir(entry.path, children, depth + 1);
+    }
+  });
+  wrap.appendChild(row);
+  wrap.appendChild(children);
+  return wrap;
+}
+
+function fileNode(entry, depth) {
+  const row = document.createElement("div");
+  row.className = "node";
+  row.style.paddingLeft = rowPad(depth) + 12 + "px";
+  row.innerHTML = `<span class="icon">▤</span><span class="label"></span>`;
+  row.querySelector(".label").textContent = entry.name;
+  row.addEventListener("click", () => openFile(entry.path));
+  return row;
+}
+
+async function openFile(path) {
+  try {
+    const res = await fetch(`${KERNEL}/files/read?path=${encodeURIComponent(path)}`);
+    if (!res.ok) return;
+    const data = await res.json();
+    el("previewName").textContent = path + (data.truncated ? "  (truncated)" : "");
+    el("previewBody").textContent = data.content;
+    el("log").classList.add("hidden");
+    preview.classList.remove("hidden");
+  } catch (e) {
+    /* ignore */
+  }
+}
+
+el("previewClose").addEventListener("click", () => {
+  preview.classList.add("hidden");
+  el("log").classList.remove("hidden");
+});
+
 el("composer").addEventListener("submit", (e) => {
   e.preventDefault();
   send();

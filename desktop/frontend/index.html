@@ -11,28 +11,47 @@
       <header class="topbar">
         <div class="brand">agent&#8203;-me</div>
         <div class="status">
+          <button id="filesToggle" class="toggle" title="Toggle file viewer">Files</button>
           <span id="provider" class="provider">…</span>
           <span id="dot" class="dot dot--pending" title="connecting"></span>
         </div>
       </header>
 
-      <main id="log" class="log" aria-live="polite">
-        <div class="empty" id="empty">
-          Start a conversation. The kernel streams tokens and shows tool calls as
-          they happen — the same API the CLI uses.
-        </div>
-      </main>
+      <div class="body">
+        <aside id="sidebar" class="sidebar hidden">
+          <div class="sidebar-head">Project (read-only)</div>
+          <div id="tree" class="tree"></div>
+        </aside>
 
-      <form id="composer" class="composer">
-        <textarea
-          id="input"
-          class="input"
-          rows="1"
-          placeholder="Message the agent…  (Enter to send, Shift+Enter for newline)"
-          autocomplete="off"
-        ></textarea>
-        <button id="send" class="send" type="submit" disabled>Send</button>
-      </form>
+        <div class="content">
+          <main id="log" class="log" aria-live="polite">
+            <div class="empty" id="empty">
+              Start a conversation. The kernel streams tokens and shows tool calls
+              as they happen — the same API the CLI uses. Toggle
+              <strong>Files</strong> to browse the workspace.
+            </div>
+          </main>
+
+          <section id="preview" class="preview hidden">
+            <div class="preview-head">
+              <span id="previewName" class="preview-name"></span>
+              <button id="previewClose" class="preview-close" title="Close">✕</button>
+            </div>
+            <pre id="previewBody" class="preview-body"></pre>
+          </section>
+
+          <form id="composer" class="composer">
+            <textarea
+              id="input"
+              class="input"
+              rows="1"
+              placeholder="Message the agent…  (Enter to send, Shift+Enter for newline)"
+              autocomplete="off"
+            ></textarea>
+            <button id="send" class="send" type="submit" disabled>Send</button>
+          </form>
+        </div>
+      </div>
     </div>
     <script src="app.js"></script>
   </body>
