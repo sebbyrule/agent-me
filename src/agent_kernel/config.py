@@ -37,6 +37,8 @@ class Config:
     host: str
     port: int
     session_dir: Path
+    # Root the read-only file viewer is sandboxed to (M5). Defaults to the CWD.
+    workspace_dir: Path
 
     @classmethod
     def from_env(cls) -> "Config":
@@ -59,6 +61,7 @@ class Config:
             host=os.getenv("KERNEL_HOST", "127.0.0.1"),
             port=int(os.getenv("KERNEL_PORT", "8765")),
             session_dir=Path(os.getenv("SESSION_DIR", "./sessions")).resolve(),
+            workspace_dir=Path(os.getenv("WORKSPACE_DIR", ".")).resolve(),
         )
 
 

@@ -26,6 +26,7 @@ dev = [
 [project.scripts]
 agent-kernel = "agent_kernel.__main__:main"
 agent = "agent_cli.__main__:main"
+agent-mcp-server = "agent_kernel.mcp.server:main"
 
 [tool.setuptools.packages.find]
 where = ["src"]

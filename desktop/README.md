@@ -71,6 +71,13 @@ milestone, as the design suggests. `AGENT_KERNEL_CMD` is the override seam until
   native window needs `npm install` + `npm run tauri dev` on a machine with the Rust
   toolchain and WebView2. The shell is small and single-purpose (sidecar lifecycle only).
 
-## Deferred to M5
-- Toggleable read-only project/file viewer pane.
-- Session persistence across restarts; exposing the kernel's own tools as an MCP server.
+## M5 additions
+
+- **File viewer pane:** toggle **Files** in the header for a read-only project tree
+  (lazy-expanding folders) with a full-height file preview. Backed by the kernel's
+  sandboxed `/files/tree` and `/files/read`, rooted at `WORKSPACE_DIR`.
+- **Sessions** persist across kernel restarts (`/sessions`, `/session/{id}`).
+- The kernel's own tools are exposed as an MCP **server** (`agent-mcp-server`) for other
+  clients — see the repo README's MCP section.
+
+Editing files from the viewer remains out of scope (read-only by design, DESIGN.md §4.3).

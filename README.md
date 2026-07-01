@@ -7,11 +7,10 @@ REPL and, later, a **Tauri desktop app**.
 See [DESIGN.md](DESIGN.md) for the full design and [AGENT.md](AGENT.md) for how the
 agent works on this repo.
 
-> **Status: M4** — everything in M3 plus a desktop chat UI: the kernel serves a
-> chat-first web frontend (streaming, tool calls, permission prompts) and a Tauri shell
-> spawns the kernel as a sidecar and hosts it. Four providers via `AGENT_PROVIDER`.
-> Desktop polish + kernel-as-MCP-server (M5) is next. See DESIGN.md §7 and
-> [desktop/README.md](desktop/README.md).
+> **Status: M5 — all milestones complete.** Everything in M4 plus a read-only
+> file/project viewer pane, session-persistence endpoints (sessions survive kernel
+> restarts), and the kernel's own tools exposed as a hand-rolled **MCP server** for other
+> clients. See DESIGN.md §7 and [desktop/README.md](desktop/README.md).
 
 ## Layout
 
@@ -120,6 +119,23 @@ External MCP tools default to requiring confirmation (they're arbitrary); a serv
 python scripts/smoke_mcp.py --model google/gemma-4-12b-qat
 ```
 
+### As an MCP *server*
+
+The kernel's own native tools are also exposed **to** other MCP clients (Claude Desktop,
+another agent) over stdio:
+
+```bash
+agent-mcp-server        # or: python -m agent_kernel.mcp.server
+```
+
+By default it exposes only read-only tools (`read_file`, `list_dir`); set
+`AGENT_MCP_EXPOSE_ALL=1` to also expose `write_file`/`run_shell` (trusted clients only).
+Point any MCP client at the command above — e.g. in a client's server config:
+
+```json
+{ "command": "agent-mcp-server", "args": [] }
+```
+
 ## API surface (kernel)
 
 | Method | Path | Purpose |
@@ -128,4 +144,8 @@ python scripts/smoke_mcp.py --model google/gemma-4-12b-qat
 | `POST` | `/session` | create a session |
 | `WS`   | `/session/{id}/stream` | bidirectional streaming turn |
 | `GET`  | `/tools` | list available tools (native + MCP) |
+| `GET`  | `/sessions` | list persisted sessions (survive restarts) |
+| `GET`  | `/session/{id}` | fetch a session's message history |
+| `GET`  | `/files/tree` | list a workspace directory (read-only, sandboxed) |
+| `GET`  | `/files/read` | read a workspace file (read-only, sandboxed) |
 | `POST` | `/mcp/connect` | spawn a stdio MCP server and register its tools |
