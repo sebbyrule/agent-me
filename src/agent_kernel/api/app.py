@@ -19,8 +19,7 @@ from fastapi.responses import JSONResponse
 from ..agent.loop import AgentLoop
 from ..config import Config, get_config
 from ..events import ErrorEvent, to_wire
-from ..providers.anthropic import AnthropicProvider
-from ..providers.base import ProviderError
+from ..providers import ProviderError, create_provider
 from ..session.store import SessionStore
 from ..tools.registry import ToolRegistry
 
@@ -37,12 +36,11 @@ class KernelState:
         """Construct the agent loop on demand.
 
         The provider is built lazily so cheap endpoints (/health, /session,
-        /tools) work without an API key; a missing key only fails an actual
-        conversation turn, where the error is surfaced to the client.
+        /tools) work without an API key; a missing/misconfigured provider only
+        fails an actual conversation turn, where the error is surfaced to the
+        client. Which provider is used comes from config (DESIGN.md §5).
         """
-        provider = AnthropicProvider(
-            api_key=self.config.anthropic_api_key or "", model=self.config.model
-        )
+        provider = create_provider(self.config)
         return AgentLoop(provider, self.store, self.tools, system=DEFAULT_SYSTEM)
 
 

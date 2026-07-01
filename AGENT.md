@@ -48,7 +48,8 @@ criteria are met and demonstrated.**
 | **M4** | Tauri shell spawns kernel as sidecar; WebView chat UI | Same session functionality as CLI, in a desktop window |
 | **M5** | File viewer pane; session persistence across restarts; kernel as MCP *server* | — |
 
-**We are currently at: M0.**
+**We are currently at: M0 → M1.** A second provider (LM Studio) was added ahead of its
+M3 slot — see the deviation note in §4.
 
 ## 4. Anti-scope-creep rules (DESIGN.md §9)
 
@@ -58,6 +59,14 @@ criteria are met and demonstrated.**
 - **No UI reaching into internals:** enforce the API boundary at all times.
 - When tempted to add breadth, stop and ask: *does the current milestone's exit
   criterion need this?* If no, it waits.
+
+> **Documented deviation — LM Studio provider (2026-07-01).** The user chose to add an
+> LM Studio provider adapter before its planned M3 slot, with the tradeoff surfaced.
+> Rationale: LM Studio is a local, free, OpenAI-compatible server, so it lets us
+> exercise the streaming loop and M1 tool-calling without spending Anthropic tokens —
+> a testing enabler, not the "all providers at once" pattern §9 warns against. The
+> provider seam (principle #3) made this cheap and non-disruptive. Scope is limited to
+> one local adapter behind the existing interface; OpenAI/Ollama still wait for M3.
 
 ## 5. Open decisions to respect (DESIGN.md §8)
 

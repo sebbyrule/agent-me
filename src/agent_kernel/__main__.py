@@ -16,8 +16,14 @@ def main() -> None:
     config = get_config()
     app = create_app(config)
     print(f"agent-me kernel listening on http://{config.host}:{config.port}")
-    if not config.anthropic_api_key:
+    print(f"  provider: {config.provider}")
+    if config.provider == "anthropic" and not config.anthropic_api_key:
         print("  warning: ANTHROPIC_API_KEY is not set — conversations will fail.")
+    elif config.provider == "lmstudio":
+        print(
+            f"  LM Studio: {config.lmstudio_base_url} (model {config.lmstudio_model!r}) "
+            "- ensure the local server is running with a model loaded."
+        )
     uvicorn.run(app, host=config.host, port=config.port, log_level="info")
 
 
