@@ -62,6 +62,16 @@ The provider is chosen by `AGENT_PROVIDER`; nothing else in the kernel or CLI ch
 > This adapter was added ahead of its planned M3 slot as a deliberate, documented
 > deviation — see AGENT.md §4.
 
+With LM Studio running, a live end-to-end smoke test spins up the kernel, streams a
+conversation, and drives a real tool call over the WebSocket API:
+
+```bash
+python scripts/smoke_lmstudio.py --model google/gemma-4-12b-qat
+```
+
+Exit code 0 means the streaming path worked; the tool-call phase is reported (it warns
+rather than fails if the model chooses not to call a tool).
+
 ## Tools & permissions
 
 The agent has native tools: `read_file`, `list_dir` (read), `write_file` (write), and
