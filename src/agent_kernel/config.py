@@ -25,6 +25,13 @@ class Config:
     lmstudio_base_url: str
     lmstudio_model: str
     lmstudio_api_key: str
+    # OpenAI (hosted) settings.
+    openai_api_key: str | None
+    openai_model: str
+    openai_base_url: str
+    # Ollama (native NDJSON local server) settings.
+    ollama_base_url: str
+    ollama_model: str
     # Tool permission policy: "ask" (default), "allow", or "deny" (DESIGN.md §8).
     tool_policy: str
     host: str
@@ -43,6 +50,11 @@ class Config:
             lmstudio_model=os.getenv("LMSTUDIO_MODEL", "local-model"),
             # LM Studio ignores the key, but the OpenAI-style header needs a value.
             lmstudio_api_key=os.getenv("LMSTUDIO_API_KEY", "lm-studio"),
+            openai_api_key=os.getenv("OPENAI_API_KEY") or None,
+            openai_model=os.getenv("OPENAI_MODEL", "gpt-4o-mini"),
+            openai_base_url=os.getenv("OPENAI_BASE_URL", "https://api.openai.com/v1"),
+            ollama_base_url=os.getenv("OLLAMA_BASE_URL", "http://localhost:11434"),
+            ollama_model=os.getenv("OLLAMA_MODEL", "llama3.2"),
             tool_policy=os.getenv("AGENT_TOOL_POLICY", "ask").strip().lower(),
             host=os.getenv("KERNEL_HOST", "127.0.0.1"),
             port=int(os.getenv("KERNEL_PORT", "8765")),

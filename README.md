@@ -7,10 +7,10 @@ REPL and, later, a **Tauri desktop app**.
 See [DESIGN.md](DESIGN.md) for the full design and [AGENT.md](AGENT.md) for how the
 agent works on this repo.
 
-> **Status: M2** — everything in M1 plus a hand-rolled MCP client: connect a stdio MCP
-> server at runtime (`POST /mcp/connect`) and its tools join the registry, invokable by
-> the agent exactly like native tools. Two provider adapters (Anthropic + LM Studio).
-> Multi-provider config switch (M3) is next. See DESIGN.md §7.
+> **Status: M3** — everything in M2, now across four provider adapters selectable by a
+> single config switch (`AGENT_PROVIDER`): Anthropic, OpenAI, LM Studio, and Ollama. The
+> agent loop, tools, and MCP are all provider-agnostic. The Tauri desktop shell (M4) is
+> next. See DESIGN.md §7.
 
 ## Layout
 
@@ -19,7 +19,7 @@ src/
   agent_kernel/       # the kernel (long-running process)
     api/              # FastAPI HTTP/WS surface
     agent/            # provider-agnostic agent loop
-    providers/        # provider adapters (Anthropic + LM Studio)
+    providers/        # provider adapters (Anthropic, OpenAI, LM Studio, Ollama)
     permissions.py    # tool risk levels + permission policy
     tools/            # tool registry + native tools (file/shell)
     mcp/              # hand-rolled MCP stdio client + manager   [server: M5]
@@ -46,22 +46,29 @@ agent
 The exit criterion for M0: a real, token-streamed conversation with Claude through the
 CLI.
 
-### Using LM Studio instead of Anthropic
+### Switching providers
 
-A second provider adapter targets [LM Studio](https://lmstudio.ai/)'s local
-OpenAI-compatible server, so you can run the loop against a local model for free (great
-for testing without spending Anthropic tokens). Start LM Studio's server, load a model,
-then in `.env`:
+The provider is chosen entirely by `AGENT_PROVIDER`; nothing else in the kernel or CLI
+changes. All four normalize into one internal streaming event format, so the agent loop,
+tools, and MCP behave identically regardless of provider.
+
+| `AGENT_PROVIDER` | Transport | Needs |
+|---|---|---|
+| `anthropic` | Anthropic SDK (SSE) | `ANTHROPIC_API_KEY` |
+| `openai` | OpenAI `/chat/completions` (SSE) | `OPENAI_API_KEY` |
+| `lmstudio` | OpenAI-compatible, local | [LM Studio](https://lmstudio.ai/) server + a model |
+| `ollama` | native `/api/chat` (NDJSON) | [Ollama](https://ollama.com/) running + a pulled model |
+
+`openai` and `lmstudio` share one hand-rolled OpenAI-compatible adapter; `ollama` has its
+own NDJSON adapter. Example — run the loop against a free local model with LM Studio:
 
 ```
 AGENT_PROVIDER=lmstudio
-LMSTUDIO_BASE_URL=http://localhost:1234/v1
 LMSTUDIO_MODEL=local-model
 ```
 
-The provider is chosen by `AGENT_PROVIDER`; nothing else in the kernel or CLI changes.
-> This adapter was added ahead of its planned M3 slot as a deliberate, documented
-> deviation — see AGENT.md §4.
+> LM Studio was added ahead of its planned M3 slot as a deliberate, documented deviation
+> — see AGENT.md §4.
 
 With LM Studio running, a live end-to-end smoke test spins up the kernel, streams a
 conversation, and drives a real tool call over the WebSocket API:

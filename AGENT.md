@@ -48,14 +48,20 @@ criteria are met and demonstrated.**
 | **M4** | Tauri shell spawns kernel as sidecar; WebView chat UI | Same session functionality as CLI, in a desktop window |
 | **M5** | File viewer pane; session persistence across restarts; kernel as MCP *server* | — |
 
-**We are currently at: M2 complete → M3.** M0/M1 as before. M2 adds a hand-rolled MCP
-stdio client (JSON-RPC framing, initialize handshake, tools/list discovery, tools/call
-invocation) plus a manager that folds discovered tools into the registry, and
-`POST /mcp/connect`. Confirmed live via `scripts/smoke_mcp.py`: the LM Studio model
-called an MCP-sourced `add` tool end-to-end (result 42). A second provider (LM Studio)
-was added ahead of its M3 slot — see the deviation note in §4. **Next: M3** — add
-OpenAI, then Ollama, behind the existing adapter; same task runs against any provider
-via a config switch. (LM Studio already exercises the OpenAI-compatible path.)
+**We are currently at: M3 complete → M4.** M0–M2 as before. M3 adds two providers behind
+the existing interface: an `OpenAIProvider` and `LMStudioProvider` sharing one hand-rolled
+`OpenAICompatibleProvider` base, plus a native-NDJSON `OllamaProvider`. All four are
+selectable via `AGENT_PROVIDER`; nothing else in the kernel changes (principle #1/#3).
+
+Live verification status: LM Studio (the OpenAI-compatible path, shared verbatim by the
+hosted OpenAI adapter) is confirmed live end-to-end. Hosted OpenAI and Ollama are
+implemented and unit-tested (mocked transports) but not live-run here — no `OPENAI_API_KEY`
+is set (don't spend the user's money without asking) and Ollama isn't running on this
+machine. To live-check them: set `OPENAI_API_KEY` / start `ollama serve`, then point
+`scripts/smoke_lmstudio.py` at them or flip `AGENT_PROVIDER`.
+
+**Next: M4** — Tauri shell spawns the kernel as a sidecar; WebView chat UI hits the same
+API as the CLI (DESIGN.md §7). This is the first milestone needing Rust/Node tooling.
 
 ## 4. Anti-scope-creep rules (DESIGN.md §9)
 
