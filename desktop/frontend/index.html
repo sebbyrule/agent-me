@@ -1,0 +1,39 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>agent-me</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="topbar">
+        <div class="brand">agent&#8203;-me</div>
+        <div class="status">
+          <span id="provider" class="provider">…</span>
+          <span id="dot" class="dot dot--pending" title="connecting"></span>
+        </div>
+      </header>
+
+      <main id="log" class="log" aria-live="polite">
+        <div class="empty" id="empty">
+          Start a conversation. The kernel streams tokens and shows tool calls as
+          they happen — the same API the CLI uses.
+        </div>
+      </main>
+
+      <form id="composer" class="composer">
+        <textarea
+          id="input"
+          class="input"
+          rows="1"
+          placeholder="Message the agent…  (Enter to send, Shift+Enter for newline)"
+          autocomplete="off"
+        ></textarea>
+        <button id="send" class="send" type="submit" disabled>Send</button>
+      </form>
+    </div>
+    <script src="app.js"></script>
+  </body>
+</html>

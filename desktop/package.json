@@ -1,0 +1,14 @@
+{
+  "name": "agent-me-desktop",
+  "version": "0.0.1",
+  "private": true,
+  "description": "Tauri desktop shell for agent-me (spawns the kernel sidecar; hosts the chat UI)",
+  "scripts": {
+    "tauri": "tauri",
+    "dev": "tauri dev",
+    "build": "tauri build"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2"
+  }
+}

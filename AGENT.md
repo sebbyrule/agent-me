@@ -48,20 +48,22 @@ criteria are met and demonstrated.**
 | **M4** | Tauri shell spawns kernel as sidecar; WebView chat UI | Same session functionality as CLI, in a desktop window |
 | **M5** | File viewer pane; session persistence across restarts; kernel as MCP *server* | — |
 
-**We are currently at: M3 complete → M4.** M0–M2 as before. M3 adds two providers behind
-the existing interface: an `OpenAIProvider` and `LMStudioProvider` sharing one hand-rolled
-`OpenAICompatibleProvider` base, plus a native-NDJSON `OllamaProvider`. All four are
-selectable via `AGENT_PROVIDER`; nothing else in the kernel changes (principle #1/#3).
+**We are currently at: M4 complete → M5.** M0–M3 as before. M4 adds a chat-first web UI
+(`desktop/frontend/`, vanilla JS) that the kernel serves at `/app` (CORS enabled so
+Tauri's `tauri://` webview can also reach it), plus a Tauri Rust shell
+(`desktop/src-tauri/`) that spawns the kernel as a sidecar, health-checks it, shows the
+window, and kills the kernel on close. Sidecar packaging decision (§8): system Python
+via `python -m agent_kernel`, overridable with `AGENT_KERNEL_CMD`; bundling deferred.
 
-Live verification status: LM Studio (the OpenAI-compatible path, shared verbatim by the
-hosted OpenAI adapter) is confirmed live end-to-end. Hosted OpenAI and Ollama are
-implemented and unit-tested (mocked transports) but not live-run here — no `OPENAI_API_KEY`
-is set (don't spend the user's money without asking) and Ollama isn't running on this
-machine. To live-check them: set `OPENAI_API_KEY` / start `ollama serve`, then point
-`scripts/smoke_lmstudio.py` at them or flip `AGENT_PROVIDER`.
+Live verification status: the web UI was driven live against LM Studio in a browser —
+streaming, a `write_file` tool call, the Allow/Deny permission prompt, tool result, and
+final answer (M4 exit criterion: same session functionality as the CLI). The Rust shell
+is authored to spec but **not compiled here** — building the native window needs
+`npm install` + `npm run tauri dev` on a machine with the Rust toolchain and WebView2.
 
-**Next: M4** — Tauri shell spawns the kernel as a sidecar; WebView chat UI hits the same
-API as the CLI (DESIGN.md §7). This is the first milestone needing Rust/Node tooling.
+**Next: M5** — desktop polish (toggleable read-only file/project viewer pane), session
+persistence across restarts, and exposing the kernel's own tools as an MCP *server* for
+other clients (DESIGN.md §7; the hand-rolled MCP server stub already exists).
 
 ## 4. Anti-scope-creep rules (DESIGN.md §9)
 

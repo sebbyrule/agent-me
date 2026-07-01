@@ -11,11 +11,15 @@ The CLI and, later, the Tauri app both talk to exactly these endpoints.
 
 from __future__ import annotations
 
+import os
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
+from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
-from fastapi.responses import JSONResponse
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, RedirectResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from ..agent.loop import AgentLoop
@@ -39,6 +43,18 @@ class MCPConnectRequest(BaseModel):
     args: list[str] = []
     env: dict[str, str] | None = None
     cwd: str | None = None
+
+
+def _frontend_dir() -> Path | None:
+    """Locate the desktop chat UI so the kernel can serve it (M4). The kernel
+    stays usable headless if the directory is absent."""
+    env = os.getenv("FRONTEND_DIR")
+    path = (
+        Path(env)
+        if env
+        else Path(__file__).resolve().parents[3] / "desktop" / "frontend"
+    )
+    return path if path.is_dir() else None
 
 
 @dataclass
@@ -98,9 +114,23 @@ def create_app(config: Config | None = None) -> FastAPI:
 
     app = FastAPI(title="agent-me kernel", version="0.0.1", lifespan=lifespan)
 
+    # The kernel binds to localhost only; allow any origin so both the
+    # kernel-served UI and Tauri's bundled webview (a tauri:// origin) can reach
+    # the API. No credentials are used, so "*" is safe here.
+    app.add_middleware(
+        CORSMiddleware,
+        allow_origins=["*"],
+        allow_methods=["*"],
+        allow_headers=["*"],
+    )
+
     @app.get("/health")
     async def health() -> dict[str, str]:
-        return {"status": "ok", "version": app.version}
+        return {
+            "status": "ok",
+            "version": app.version,
+            "provider": get_state().config.provider,
+        }
 
     @app.post("/session")
     async def create_session() -> dict[str, str]:
@@ -196,5 +226,17 @@ def create_app(config: Config | None = None) -> FastAPI:
         except WebSocketDisconnect:
             # Client went away; the kernel keeps the session alive (DESIGN.md §4.2).
             return
+
+    # Serve the desktop chat UI (M4) from the same origin as the API, so the
+    # browser and Tauri's webview both talk to one kernel. Mounted last so it
+    # never shadows an API route.
+    frontend = _frontend_dir()
+    if frontend is not None:
+
+        @app.get("/")
+        async def _root() -> RedirectResponse:
+            return RedirectResponse(url="/app/")
+
+        app.mount("/app", StaticFiles(directory=str(frontend), html=True), name="app")
 
     return app

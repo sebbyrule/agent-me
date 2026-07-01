@@ -32,3 +32,6 @@ desktop/src-tauri/target/
 .idea/
 .DS_Store
 Thumbs.db
+
+# Machine-specific preview launch config
+/.claude/launch.json
