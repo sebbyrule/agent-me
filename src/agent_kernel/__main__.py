@@ -11,6 +11,11 @@ import uvicorn
 from .api.app import create_app
 from .config import get_config
 
+# Note: the MCP client spawns server subprocesses via asyncio, which on Windows
+# requires the Proactor event loop. That is the default on Windows since Python
+# 3.8, so no policy override is needed here (and the policy API is deprecated as
+# of 3.14). The live MCP smoke test confirms the running kernel supports this.
+
 
 def main() -> None:
     config = get_config()
