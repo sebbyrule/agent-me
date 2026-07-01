@@ -43,6 +43,23 @@ agent
 The exit criterion for M0: a real, token-streamed conversation with Claude through the
 CLI.
 
+### Using LM Studio instead of Anthropic
+
+A second provider adapter targets [LM Studio](https://lmstudio.ai/)'s local
+OpenAI-compatible server, so you can run the loop against a local model for free (great
+for testing without spending Anthropic tokens). Start LM Studio's server, load a model,
+then in `.env`:
+
+```
+AGENT_PROVIDER=lmstudio
+LMSTUDIO_BASE_URL=http://localhost:1234/v1
+LMSTUDIO_MODEL=local-model
+```
+
+The provider is chosen by `AGENT_PROVIDER`; nothing else in the kernel or CLI changes.
+> This adapter was added ahead of its planned M3 slot as a deliberate, documented
+> deviation — see AGENT.md §4.
+
 ## API surface (kernel)
 
 | Method | Path | Purpose |
