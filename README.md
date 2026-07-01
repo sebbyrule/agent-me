@@ -7,9 +7,10 @@ REPL and, later, a **Tauri desktop app**.
 See [DESIGN.md](DESIGN.md) for the full design and [AGENT.md](AGENT.md) for how the
 agent works on this repo.
 
-> **Status: M1** — streaming agent loop with native tools (file read/write/list, shell
-> exec), parallel tool calls, and a permission layer that confirms risky calls. Two
-> provider adapters (Anthropic + LM Studio). MCP is next (M2). See DESIGN.md §7.
+> **Status: M2** — everything in M1 plus a hand-rolled MCP client: connect a stdio MCP
+> server at runtime (`POST /mcp/connect`) and its tools join the registry, invokable by
+> the agent exactly like native tools. Two provider adapters (Anthropic + LM Studio).
+> Multi-provider config switch (M3) is next. See DESIGN.md §7.
 
 ## Layout
 
@@ -21,7 +22,7 @@ src/
     providers/        # provider adapters (Anthropic + LM Studio)
     permissions.py    # tool risk levels + permission policy
     tools/            # tool registry + native tools (file/shell)
-    mcp/              # hand-rolled MCP client/server            [grows in M2/M5]
+    mcp/              # hand-rolled MCP stdio client + manager   [server: M5]
     session/          # session store (file-based for now)
   agent_cli/          # REPL client over the kernel's WS API
 desktop/              # Tauri app                                [M4]
@@ -86,6 +87,25 @@ The agent has native tools: `read_file`, `list_dir` (read), `write_file` (write)
 The kernel owns the policy; the frontend owns the confirmation UX (a REPL `[y/N]`
 prompt now, a dialog in the Tauri app later). See DESIGN.md §8.
 
+## MCP (hand-rolled)
+
+The kernel speaks the Model Context Protocol as a client (written from scratch over a
+stdio JSON-RPC transport). Connect a server at runtime and its tools are discovered and
+folded into the registry — the agent then calls them just like native tools:
+
+```bash
+curl -X POST http://127.0.0.1:8765/mcp/connect -H 'content-type: application/json' \
+  -d '{"name":"echo","command":"python","args":["tests/fixtures/mcp_echo_server.py"]}'
+```
+
+External MCP tools default to requiring confirmation (they're arbitrary); a server's
+`readOnlyHint` annotation downgrades a tool to auto-allowed. A live end-to-end demo
+(kernel + LM Studio + the bundled MCP server) is in `scripts/smoke_mcp.py`:
+
+```bash
+python scripts/smoke_mcp.py --model google/gemma-4-12b-qat
+```
+
 ## API surface (kernel)
 
 | Method | Path | Purpose |
@@ -94,4 +114,4 @@ prompt now, a dialog in the Tauri app later). See DESIGN.md §8.
 | `POST` | `/session` | create a session |
 | `WS`   | `/session/{id}/stream` | bidirectional streaming turn |
 | `GET`  | `/tools` | list available tools (native + MCP) |
-| `POST` | `/mcp/connect` | register an MCP server at runtime (M2) |
+| `POST` | `/mcp/connect` | spawn a stdio MCP server and register its tools |

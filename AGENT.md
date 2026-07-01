@@ -48,12 +48,14 @@ criteria are met and demonstrated.**
 | **M4** | Tauri shell spawns kernel as sidecar; WebView chat UI | Same session functionality as CLI, in a desktop window |
 | **M5** | File viewer pane; session persistence across restarts; kernel as MCP *server* | — |
 
-**We are currently at: M1 complete → M2.** The tool loop, native tools, and permission
-layer are implemented, unit-tested, and confirmed live end-to-end via
-`scripts/smoke_lmstudio.py` against a real model (LM Studio, google/gemma-4-12b-qat):
-streaming plus a real `list_dir` tool-call round-trip. A second provider (LM Studio)
-was added ahead of its M3 slot — see the deviation note in §4. **Next: M2** — the
-hand-rolled MCP client (one real server, one tool; keep it scoped per §4).
+**We are currently at: M2 complete → M3.** M0/M1 as before. M2 adds a hand-rolled MCP
+stdio client (JSON-RPC framing, initialize handshake, tools/list discovery, tools/call
+invocation) plus a manager that folds discovered tools into the registry, and
+`POST /mcp/connect`. Confirmed live via `scripts/smoke_mcp.py`: the LM Studio model
+called an MCP-sourced `add` tool end-to-end (result 42). A second provider (LM Studio)
+was added ahead of its M3 slot — see the deviation note in §4. **Next: M3** — add
+OpenAI, then Ollama, behind the existing adapter; same task runs against any provider
+via a config switch. (LM Studio already exercises the OpenAI-compatible path.)
 
 ## 4. Anti-scope-creep rules (DESIGN.md §9)
 

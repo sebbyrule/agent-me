@@ -11,14 +11,17 @@ The CLI and, later, the Tauri app both talk to exactly these endpoints.
 
 from __future__ import annotations
 
+from contextlib import asynccontextmanager
 from dataclasses import dataclass
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.responses import JSONResponse
+from pydantic import BaseModel
 
 from ..agent.loop import AgentLoop
 from ..config import Config, get_config
 from ..events import ErrorEvent, PermissionRequest, ToolCallStart, to_wire
+from ..mcp import MCPManager
 from ..permissions import PermissionPolicy, RiskLevel
 from ..providers import ProviderError, create_provider
 from ..session.store import SessionStore
@@ -28,12 +31,23 @@ from ..tools.registry import ToolRegistry
 DEFAULT_SYSTEM = "You are a helpful AI assistant running inside the agent-me kernel."
 
 
+class MCPConnectRequest(BaseModel):
+    """Body for POST /mcp/connect — spawn and register a stdio MCP server."""
+
+    name: str
+    command: str
+    args: list[str] = []
+    env: dict[str, str] | None = None
+    cwd: str | None = None
+
+
 @dataclass
 class KernelState:
     config: Config
     store: SessionStore
     tools: ToolRegistry
     policy: PermissionPolicy
+    mcp: MCPManager
 
     def build_loop(self) -> AgentLoop:
         """Construct the agent loop on demand.
@@ -59,12 +73,13 @@ def build_state(config: Config | None = None) -> KernelState:
     tools = ToolRegistry()
     register_native_tools(tools)  # M1: file read/write/list + shell exec.
     policy = PermissionPolicy(mode=config.tool_policy)
-    return KernelState(config=config, store=store, tools=tools, policy=policy)
+    mcp = MCPManager(tools)  # M2: discovered tools register into the same registry.
+    return KernelState(
+        config=config, store=store, tools=tools, policy=policy, mcp=mcp
+    )
 
 
 def create_app(config: Config | None = None) -> FastAPI:
-    app = FastAPI(title="agent-me kernel", version="0.0.1")
-
     # Provider construction can fail (missing key); defer it so /health works
     # even before a key is configured, and surface the error on first use.
     state: dict[str, KernelState] = {}
@@ -73,6 +88,15 @@ def create_app(config: Config | None = None) -> FastAPI:
         if "kernel" not in state:
             state["kernel"] = build_state(config)
         return state["kernel"]
+
+    @asynccontextmanager
+    async def lifespan(_app: FastAPI):
+        yield
+        # Tear down any MCP server subprocesses on shutdown.
+        if "kernel" in state:
+            await state["kernel"].mcp.close_all()
+
+    app = FastAPI(title="agent-me kernel", version="0.0.1", lifespan=lifespan)
 
     @app.get("/health")
     async def health() -> dict[str, str]:
@@ -99,12 +123,27 @@ def create_app(config: Config | None = None) -> FastAPI:
         }
 
     @app.post("/mcp/connect")
-    async def mcp_connect() -> JSONResponse:
-        # M2. Registering an external MCP server at runtime.
-        return JSONResponse(
-            status_code=501,
-            content={"detail": "MCP connect is not implemented until M2."},
-        )
+    async def mcp_connect(request: MCPConnectRequest) -> JSONResponse:
+        # Spawn a stdio MCP server, discover its tools, and register them
+        # (DESIGN.md §4.1). Discovered tools then appear in /tools and are
+        # invokable by the agent loop exactly like native tools.
+        kernel = get_state()
+        try:
+            summary = await kernel.mcp.connect_stdio(
+                name=request.name,
+                command=request.command,
+                args=request.args,
+                env=request.env,
+                cwd=request.cwd,
+            )
+        except ValueError as exc:
+            return JSONResponse(status_code=409, content={"detail": str(exc)})
+        except Exception as exc:  # spawn/handshake/discovery failure
+            return JSONResponse(
+                status_code=502,
+                content={"detail": f"Failed to connect MCP server: {exc}"},
+            )
+        return JSONResponse(content=summary)
 
     @app.websocket("/session/{session_id}/stream")
     async def stream(websocket: WebSocket, session_id: str) -> None:
