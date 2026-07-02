@@ -126,6 +126,10 @@ html, body {
 .msg--bot :not(pre) > code { background: rgba(255, 255, 255, 0.09); padding: 1px 5px; border-radius: 4px; }
 .msg--bot pre.code { background: #0c0e13; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 8px 0; }
 .msg--bot pre.code code { background: none; padding: 0; }
+.msg--bot .tok-keyword { color: #c792ea; }
+.msg--bot .tok-string { color: #c3e88d; }
+.msg--bot .tok-number { color: #f78c6c; }
+.msg--bot .tok-comment { color: #6b7280; font-style: italic; }
 .msg--error { align-self: flex-start; background: var(--error); border: 1px solid var(--error-border); }
 
 .tool {
