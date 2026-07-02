@@ -110,7 +110,18 @@ html, body {
 
 .msg { max-width: 760px; width: fit-content; padding: 10px 14px; border-radius: 12px; white-space: pre-wrap; word-wrap: break-word; }
 .msg--user { align-self: flex-end; background: var(--user); border: 1px solid #2d5074; }
-.msg--bot { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border); }
+.msg--bot { align-self: flex-start; background: var(--panel-2); border: 1px solid var(--border); white-space: normal; }
+.msg--bot p { margin: 6px 0; }
+.msg--bot p:first-child { margin-top: 0; }
+.msg--bot p:last-child { margin-bottom: 0; }
+.msg--bot ul, .msg--bot ol { margin: 6px 0; padding-left: 22px; }
+.msg--bot li { margin: 2px 0; }
+.msg--bot h3, .msg--bot h4, .msg--bot h5 { margin: 10px 0 4px; font-size: 1.05em; }
+.msg--bot a { color: var(--accent); }
+.msg--bot code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.9em; }
+.msg--bot :not(pre) > code { background: rgba(255, 255, 255, 0.09); padding: 1px 5px; border-radius: 4px; }
+.msg--bot pre.code { background: #0c0e13; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 8px 0; }
+.msg--bot pre.code code { background: none; padding: 0; }
 .msg--error { align-self: flex-start; background: var(--error); border: 1px solid var(--error-border); }
 
 .tool {
