@@ -100,7 +100,8 @@ def build_state(config: Config | None = None) -> KernelState:
     config = config or get_config()
     store = SessionStore(config.session_dir)
     tools = ToolRegistry()
-    register_native_tools(tools)  # M1: file read/write/list + shell exec.
+    # Native file/shell tools are sandboxed to the workspace root.
+    register_native_tools(tools, config.workspace_dir)
     policy = PermissionPolicy(mode=config.tool_policy)
     mcp = MCPManager(tools)  # M2: discovered tools register into the same registry.
     return KernelState(

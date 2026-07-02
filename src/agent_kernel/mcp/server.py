@@ -31,10 +31,13 @@ from .client import PROTOCOL_VERSION
 SERVER_INFO = {"name": "agent-me", "version": __version__}
 
 
-def build_registry(expose_all: bool = False) -> ToolRegistry:
-    """Registry of the tools this server exposes. Read-only unless `expose_all`."""
+def build_registry(
+    expose_all: bool = False, workspace: str | None = None
+) -> ToolRegistry:
+    """Registry of the tools this server exposes. Read-only unless `expose_all`;
+    file/shell tools are sandboxed to `workspace` (default the CWD)."""
     full = ToolRegistry()
-    register_native_tools(full)
+    register_native_tools(full, workspace)
     if expose_all:
         return full
     exposed = ToolRegistry()
@@ -149,7 +152,9 @@ def main() -> None:
         "true",
         "yes",
     )
-    registry = build_registry(expose_all=expose_all)
+    registry = build_registry(
+        expose_all=expose_all, workspace=os.getenv("WORKSPACE_DIR")
+    )
     asyncio.run(serve(registry))
 
 
