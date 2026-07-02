@@ -11,7 +11,7 @@
       <header class="topbar">
         <div class="brand">agent&#8203;-me</div>
         <div class="status">
-          <button id="filesToggle" class="toggle" title="Toggle file viewer">Files</button>
+          <button id="sidebarToggle" class="toggle" title="Toggle sidebar">☰</button>
           <span id="provider" class="provider">…</span>
           <span id="dot" class="dot dot--pending" title="connecting"></span>
         </div>
@@ -19,8 +19,17 @@
 
       <div class="body">
         <aside id="sidebar" class="sidebar hidden">
-          <div class="sidebar-head">Project (read-only)</div>
-          <div id="tree" class="tree"></div>
+          <div class="sidebar-section">
+            <div class="sidebar-head">
+              <span>Conversations</span>
+              <button id="newChat" class="mini-btn" title="New conversation">+ New</button>
+            </div>
+            <div id="chats" class="chats"></div>
+          </div>
+          <div class="sidebar-section tree-section">
+            <div class="sidebar-head">Project (read-only)</div>
+            <div id="tree" class="tree"></div>
+          </div>
         </aside>
 
         <div class="content">

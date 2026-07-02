@@ -150,6 +150,7 @@ function onEvent(event) {
       if (currentBot) currentBot.classList.remove("cursor");
       currentBot = null;
       setInputEnabled(true);
+      refreshChatsIfOpen(); // message counts / a new session may have appeared
       break;
     case "error":
       addError(event.message);
@@ -193,6 +194,13 @@ async function boot() {
     return;
   }
 
+  connect();
+}
+
+function connect() {
+  if (ws) {
+    try { ws.close(); } catch (e) { /* ignore */ }
+  }
   ws = new WebSocket(`${WS_BASE}/session/${sessionId}/stream`);
   ws.onopen = () => {
     setStatus("ok", "connected");
@@ -204,6 +212,102 @@ async function boot() {
   };
   ws.onerror = () => setStatus("bad", "connection error");
   ws.onmessage = (msg) => onEvent(JSON.parse(msg.data));
+}
+
+// --- Conversations: surfaces the /sessions and /session/{id} endpoints -------
+
+function clearLog() {
+  log.innerHTML = "";
+  currentBot = null;
+}
+
+function appendBot(text) {
+  const div = document.createElement("div");
+  div.className = "msg msg--bot";
+  div.textContent = text;
+  log.appendChild(div);
+}
+
+function renderHistory(messages) {
+  clearLog();
+  for (const m of messages) {
+    if (m.role === "user") {
+      addUser(typeof m.content === "string" ? m.content : JSON.stringify(m.content));
+    } else if (m.role === "assistant") {
+      if (m.content) appendBot(m.content);
+      for (const tc of m.tool_calls || []) {
+        addToolCall({ id: tc.id, name: tc.name, arguments: tc.arguments });
+      }
+    } else if (m.role === "tool") {
+      for (const r of m.tool_results || []) {
+        addToolResult({ id: r.id, name: r.name, result: r.result, is_error: r.is_error });
+      }
+    }
+  }
+  currentBot = null;
+  scroll();
+}
+
+async function loadChats() {
+  let sessions = [];
+  try {
+    sessions = (await (await fetch(`${KERNEL}/sessions`)).json()).sessions || [];
+  } catch (e) {
+    return;
+  }
+  const box = el("chats");
+  box.innerHTML = "";
+  if (!sessions.length) {
+    box.innerHTML = '<div class="none">No conversations yet.</div>';
+    return;
+  }
+  for (const s of sessions) {
+    const item = document.createElement("div");
+    item.className = "chat-item" + (s.id === sessionId ? " active" : "");
+    item.dataset.id = s.id;
+    item.innerHTML = `<span class="cid"></span><span class="cnt"></span>`;
+    item.querySelector(".cid").textContent = s.id.slice(0, 8);
+    item.querySelector(".cnt").textContent = s.messages + " msg";
+    item.addEventListener("click", () => selectSession(s.id));
+    box.appendChild(item);
+  }
+}
+
+async function selectSession(id) {
+  if (id === sessionId && ws && ws.readyState === WebSocket.OPEN) return;
+  sessionId = id;
+  try {
+    const data = await (await fetch(`${KERNEL}/session/${id}`)).json();
+    renderHistory(data.messages || []);
+  } catch (e) {
+    clearLog();
+  }
+  connect();
+  markActiveChat(id);
+}
+
+async function newChat() {
+  try {
+    const res = await fetch(`${KERNEL}/session`, { method: "POST" });
+    sessionId = (await res.json()).id;
+  } catch (e) {
+    addError("Could not create a new conversation.");
+    return;
+  }
+  clearLog();
+  connect();
+  loadChats();
+}
+
+function markActiveChat(id) {
+  document
+    .querySelectorAll("#chats .chat-item")
+    .forEach((n) => n.classList.toggle("active", n.dataset.id === id));
+}
+
+function refreshChatsIfOpen() {
+  const sb = document.getElementById("sidebar");
+  if (sb && !sb.classList.contains("hidden")) loadChats();
 }
 
 function autosize() {
@@ -218,14 +322,19 @@ const tree = el("tree");
 const preview = el("preview");
 let treeLoaded = false;
 
-el("filesToggle").addEventListener("click", () => {
+el("sidebarToggle").addEventListener("click", () => {
   const showing = sidebar.classList.toggle("hidden") === false;
-  el("filesToggle").classList.toggle("active", showing);
-  if (showing && !treeLoaded) {
-    treeLoaded = true;
-    loadDir("", tree, 0);
+  el("sidebarToggle").classList.toggle("active", showing);
+  if (showing) {
+    loadChats();
+    if (!treeLoaded) {
+      treeLoaded = true;
+      loadDir("", tree, 0);
+    }
   }
 });
+
+el("newChat").addEventListener("click", newChat);
 
 async function loadDir(path, container, depth) {
   try {
