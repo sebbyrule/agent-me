@@ -66,8 +66,21 @@ html, body {
   flex-direction: column;
 }
 .sidebar.hidden { display: none; }
-.sidebar-head { padding: 10px 14px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); border-bottom: 1px solid var(--border); }
-.tree { padding: 6px 0; font-size: 13px; }
+.sidebar-section { display: flex; flex-direction: column; min-height: 0; }
+.sidebar-section.tree-section { flex: 1; }
+.sidebar-head { display: flex; align-items: center; justify-content: space-between; padding: 10px 14px; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; color: var(--muted); border-bottom: 1px solid var(--border); }
+.mini-btn { background: var(--panel-2); color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; font-size: 11px; cursor: pointer; text-transform: none; letter-spacing: 0; }
+.mini-btn:hover { color: var(--text); border-color: var(--accent); }
+
+.chats { max-height: 34vh; overflow-y: auto; padding: 4px 0; }
+.chat-item { display: flex; align-items: baseline; gap: 8px; padding: 6px 14px; cursor: pointer; font-size: 13px; border-left: 2px solid transparent; }
+.chat-item:hover { background: var(--panel-2); }
+.chat-item.active { background: var(--panel-2); border-left-color: var(--accent); }
+.chat-item .cid { font-family: ui-monospace, Consolas, monospace; color: var(--text); }
+.chat-item .cnt { color: var(--muted); font-size: 11px; margin-left: auto; }
+.chats .none { padding: 8px 14px; color: var(--muted); font-size: 12px; }
+
+.tree { flex: 1; overflow-y: auto; padding: 6px 0; font-size: 13px; }
 .tree .node { display: flex; align-items: center; gap: 4px; padding: 3px 10px; cursor: pointer; white-space: nowrap; user-select: none; }
 .tree .node:hover { background: var(--panel-2); }
 .tree .twist { width: 12px; color: var(--muted); font-size: 10px; }
