@@ -163,7 +163,13 @@ html, body {
 .perm button.deny { background: #4b2430; border-color: #6b3644; }
 .perm button:disabled { opacity: 0.5; cursor: default; }
 
-.composer { display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--panel); }
+.composer { display: flex; gap: 10px; padding: 12px 16px; border-top: 1px solid var(--border); background: var(--panel); position: relative; }
+.cmenu { position: absolute; left: 16px; right: 16px; bottom: calc(100% + 6px); max-height: 240px; overflow-y: auto; background: var(--panel-2); border: 1px solid var(--border); border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.4); z-index: 20; }
+.cmenu.hidden { display: none; }
+.cmenu-item { display: flex; align-items: baseline; gap: 10px; padding: 7px 12px; cursor: pointer; }
+.cmenu-item.active, .cmenu-item:hover { background: rgba(110,168,254,0.15); }
+.cmenu-label { font-family: ui-monospace, Consolas, monospace; font-size: 13px; color: var(--text); }
+.cmenu-hint { color: var(--muted); font-size: 12px; margin-left: auto; }
 .input {
   flex: 1;
   resize: none;

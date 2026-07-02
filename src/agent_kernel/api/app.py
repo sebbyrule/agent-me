@@ -265,6 +265,26 @@ def create_app(config: Config | None = None) -> FastAPI:
             )
         return JSONResponse(content={"path": path, "entries": entries})
 
+    @app.get("/files/list")
+    async def files_list() -> dict:
+        # Flat, capped list of workspace files for @-mention autocomplete.
+        root = get_state().config.workspace_dir
+        skip = {
+            ".git", "node_modules", ".venv", "venv", "target", "__pycache__",
+            "dist", "build", ".pytest_cache", ".mypy_cache", ".ruff_cache",
+        }
+        out: list[str] = []
+        for dirpath, dirnames, filenames in os.walk(root):
+            dirnames[:] = [d for d in dirnames if d not in skip]
+            for f in filenames:
+                out.append((Path(dirpath) / f).relative_to(root).as_posix())
+                if len(out) >= 2000:
+                    break
+            if len(out) >= 2000:
+                break
+        out.sort()
+        return {"files": out}
+
     @app.get("/files/read")
     async def files_read(path: str) -> JSONResponse:
         root = get_state().config.workspace_dir
