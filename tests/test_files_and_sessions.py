@@ -25,6 +25,16 @@ def test_files_tree_lists_workspace(tmp_path, monkeypatch):
     assert names["sub"] == "dir"
 
 
+def test_files_list_is_flat_and_skips_heavy_dirs(tmp_path, monkeypatch):
+    (tmp_path / ".git").mkdir()
+    (tmp_path / ".git" / "HEAD").write_text("x", encoding="utf-8")
+    client = _client(tmp_path, monkeypatch)
+    files = client.get("/files/list").json()["files"]
+    assert "hello.txt" in files
+    assert "sub/nested.txt" in files  # recursive, posix-style
+    assert not any(f.startswith(".git/") for f in files)  # heavy dirs skipped
+
+
 def test_files_read_returns_content(tmp_path, monkeypatch):
     client = _client(tmp_path, monkeypatch)
     body = client.get("/files/read", params={"path": "hello.txt"}).json()

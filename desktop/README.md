@@ -29,6 +29,12 @@ which is why the kernel enables permissive CORS for localhost.
 It renders the full session experience: streamed tokens, tool-call chips, tool results,
 and an Allow/Deny prompt when the kernel's permission policy asks to confirm a risky tool.
 
+Beyond that, the UI supports: a **conversation list** (resume/switch/new, over `/sessions`);
+a **Stop** button to cancel an in-flight turn; a **provider/model switcher** in the header;
+**Markdown** with **syntax-highlighted** code blocks; **`@`** to mention a workspace file
+(its contents are inlined into your message); and **`/`** slash commands (`/new`, `/clear`,
+`/files`, `/model`, `/help`).
+
 **Run it in a browser (no Tauri needed):** start the kernel, then open its served copy —
 ```bash
 agent-kernel                     # serves the UI at /app
