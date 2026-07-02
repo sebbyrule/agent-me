@@ -170,6 +170,7 @@ html, body {
 .input:focus { outline: none; border-color: var(--accent); }
 .send { background: var(--accent); color: #0b1220; border: none; border-radius: 10px; padding: 0 18px; font-weight: 600; cursor: pointer; }
 .send:disabled { opacity: 0.5; cursor: default; }
+.send.stop { background: #b94a4a; color: #fff; }
 
 .cursor::after { content: "▋"; color: var(--accent); animation: blink 1s steps(2, start) infinite; }
 @keyframes blink { to { visibility: hidden; } }
