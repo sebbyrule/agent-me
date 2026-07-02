@@ -15,7 +15,7 @@ import asyncio
 import os
 import sys
 from contextlib import asynccontextmanager
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from pathlib import Path
 
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
@@ -53,6 +53,16 @@ class MCPConnectRequest(BaseModel):
     cwd: str | None = None
 
 
+class ProviderRequest(BaseModel):
+    """Body for POST /provider — switch the active provider and/or model."""
+
+    provider: str | None = None
+    model: str | None = None
+
+
+KNOWN_PROVIDERS = ["anthropic", "openai", "lmstudio", "ollama"]
+
+
 def _safe_path(root: Path, rel: str) -> Path | None:
     """Resolve `rel` under `root`, refusing anything that escapes it (M5 file
     viewer is read-only and sandboxed to the workspace root)."""
@@ -84,16 +94,43 @@ class KernelState:
     tools: ToolRegistry
     policy: PermissionPolicy
     mcp: MCPManager
+    # Runtime overrides set via POST /provider (None = use config defaults).
+    provider_override: str | None = None
+    model_override: str | None = None
+
+    def effective_config(self) -> Config:
+        cfg = self.config
+        if self.provider_override:
+            cfg = replace(cfg, provider=self.provider_override)
+        if self.model_override:
+            field = {
+                "anthropic": "model",
+                "lmstudio": "lmstudio_model",
+                "openai": "openai_model",
+                "ollama": "ollama_model",
+            }.get(cfg.provider)
+            if field:
+                cfg = replace(cfg, **{field: self.model_override})
+        return cfg
+
+    def current(self) -> tuple[str, str]:
+        cfg = self.effective_config()
+        model = {
+            "anthropic": cfg.model,
+            "lmstudio": cfg.lmstudio_model,
+            "openai": cfg.openai_model,
+            "ollama": cfg.ollama_model,
+        }.get(cfg.provider, "")
+        return cfg.provider, model
 
     def build_loop(self) -> AgentLoop:
-        """Construct the agent loop on demand.
+        """Construct the agent loop on demand from the effective config.
 
-        The provider is built lazily so cheap endpoints (/health, /session,
-        /tools) work without an API key; a missing/misconfigured provider only
-        fails an actual conversation turn, where the error is surfaced to the
-        client. Which provider is used comes from config (DESIGN.md §5).
+        Built lazily (and per turn) so cheap endpoints work without an API key,
+        a missing/misconfigured provider only fails an actual turn, and runtime
+        provider/model switches take effect immediately (DESIGN.md §5).
         """
-        provider = create_provider(self.config)
+        provider = create_provider(self.effective_config())
         return AgentLoop(
             provider,
             self.store,
@@ -150,8 +187,31 @@ def create_app(config: Config | None = None) -> FastAPI:
         return {
             "status": "ok",
             "version": app.version,
-            "provider": get_state().config.provider,
+            "provider": get_state().current()[0],
         }
+
+    @app.get("/providers")
+    async def providers() -> dict:
+        provider, model = get_state().current()
+        return {"providers": KNOWN_PROVIDERS, "current": provider, "model": model}
+
+    @app.post("/provider")
+    async def set_provider(request: ProviderRequest):
+        kernel = get_state()
+        if request.provider is not None:
+            if request.provider not in KNOWN_PROVIDERS:
+                return JSONResponse(
+                    status_code=400,
+                    content={"detail": f"Unknown provider: {request.provider}"},
+                )
+            kernel.provider_override = request.provider
+            # Switching provider resets the model to that provider's default
+            # unless a model is supplied alongside.
+            kernel.model_override = request.model
+        elif request.model is not None:
+            kernel.model_override = request.model or None
+        provider, model = kernel.current()
+        return {"current": provider, "model": model}
 
     @app.post("/session")
     async def create_session() -> dict[str, str]:
