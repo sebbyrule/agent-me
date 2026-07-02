@@ -12,6 +12,7 @@ The CLI and, later, the Tauri app both talk to exactly these endpoints.
 from __future__ import annotations
 
 import os
+import sys
 from contextlib import asynccontextmanager
 from dataclasses import dataclass
 from pathlib import Path
@@ -59,11 +60,13 @@ def _frontend_dir() -> Path | None:
     """Locate the desktop chat UI so the kernel can serve it (M4). The kernel
     stays usable headless if the directory is absent."""
     env = os.getenv("FRONTEND_DIR")
-    path = (
-        Path(env)
-        if env
-        else Path(__file__).resolve().parents[3] / "desktop" / "frontend"
-    )
+    if env:
+        path = Path(env)
+    elif getattr(sys, "frozen", False):
+        # PyInstaller bundle: the UI is packaged next to the executable.
+        path = Path(getattr(sys, "_MEIPASS", ".")) / "frontend"
+    else:
+        path = Path(__file__).resolve().parents[3] / "desktop" / "frontend"
     return path if path.is_dir() else None
 
 

@@ -25,13 +25,24 @@ const HEALTH_ATTEMPTS: u32 = 60;
 struct KernelProcess(Mutex<Option<Child>>);
 
 fn spawn_kernel() -> std::io::Result<Child> {
-    // AGENT_KERNEL_CMD lets a user point at a venv python or a bundled binary,
-    // e.g. "C:\\path\\to\\.venv\\Scripts\\python.exe -m agent_kernel".
+    // 1) Explicit override wins (e.g. a venv python: "C:\\...\\python.exe -m agent_kernel").
     if let Ok(custom) = std::env::var("AGENT_KERNEL_CMD") {
         let mut parts = custom.split_whitespace();
         let program = parts.next().unwrap_or("python");
         return Command::new(program).args(parts).spawn();
     }
+    // 2) A bundled kernel binary next to this executable (the PyInstaller build,
+    //    DESIGN.md §8) makes a distributed app self-contained.
+    if let Ok(exe) = std::env::current_exe() {
+        if let Some(dir) = exe.parent() {
+            let name = if cfg!(windows) { "agent-kernel.exe" } else { "agent-kernel" };
+            let bundled = dir.join(name);
+            if bundled.exists() {
+                return Command::new(bundled).spawn();
+            }
+        }
+    }
+    // 3) Fall back to system Python (the dev default).
     Command::new("python").args(["-m", "agent_kernel"]).spawn()
 }
 

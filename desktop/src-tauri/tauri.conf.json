@@ -18,7 +18,6 @@
       }
     ],
     "security": {
-      "comment": "Local app talking to the kernel on 127.0.0.1; CSP disabled so the webview can fetch/WebSocket the kernel. Tighten before any distribution.",
       "csp": null
     }
   },
@@ -29,7 +28,8 @@
       "icons/32x32.png",
       "icons/128x128.png",
       "icons/128x128@2x.png",
-      "icons/icon.png"
+      "icons/icon.png",
+      "icons/icon.ico"
     ]
   }
 }
