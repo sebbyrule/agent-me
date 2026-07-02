@@ -11,6 +11,7 @@ The CLI and, later, the Tauri app both talk to exactly these endpoints.
 
 from __future__ import annotations
 
+import asyncio
 import os
 import sys
 from contextlib import asynccontextmanager
@@ -25,7 +26,13 @@ from pydantic import BaseModel
 
 from ..agent.loop import AgentLoop
 from ..config import Config, get_config
-from ..events import ErrorEvent, PermissionRequest, ToolCallStart, to_wire
+from ..events import (
+    CancelledEvent,
+    ErrorEvent,
+    PermissionRequest,
+    ToolCallStart,
+    to_wire,
+)
 from ..mcp import MCPManager
 from ..permissions import PermissionPolicy, RiskLevel
 from ..providers import ProviderError, create_provider
@@ -250,17 +257,15 @@ def create_app(config: Config | None = None) -> FastAPI:
             await websocket.close()
             return
 
-        try:
-            loop = kernel.build_loop()
-        except ProviderError as exc:
-            await websocket.send_json(to_wire(ErrorEvent(message=str(exc))))
-            await websocket.close()
-            return
+        # One receive loop drives everything so a turn can run *while* we listen
+        # for cancel / permission messages. A turn runs as a cancellable task;
+        # permission confirmations resolve futures the receive loop fills in.
+        pending: dict[str, asyncio.Future] = {}
+        turn_task: asyncio.Task | None = None
 
         async def confirm(call: ToolCallStart, risk: RiskLevel) -> bool:
-            # Ask the client to approve a risky tool call, then wait for its
-            # permission_response (DESIGN.md §8). The kernel owns policy; the
-            # frontend owns the confirmation UX.
+            fut: asyncio.Future = asyncio.get_event_loop().create_future()
+            pending[call.id] = fut
             await websocket.send_json(
                 to_wire(
                     PermissionRequest(
@@ -271,22 +276,47 @@ def create_app(config: Config | None = None) -> FastAPI:
                     )
                 )
             )
-            response = await websocket.receive_json()
-            return bool(response.get("approved"))
+            try:
+                return bool(await fut)
+            finally:
+                pending.pop(call.id, None)
+
+        async def drive_turn(user_input: str) -> None:
+            # Build the loop per turn so provider/model changes take effect
+            # without reconnecting, and a missing key surfaces as an error event.
+            try:
+                agent = kernel.build_loop()
+                async for event in agent.run_turn(session, user_input, confirm):
+                    await websocket.send_json(to_wire(event))
+            except ProviderError as exc:
+                await websocket.send_json(to_wire(ErrorEvent(message=str(exc))))
+            except asyncio.CancelledError:
+                try:
+                    await websocket.send_json(to_wire(CancelledEvent()))
+                except Exception:  # socket may be gone if the client left
+                    pass
+                raise
 
         try:
             while True:
-                payload = await websocket.receive_json()
-                user_input = payload.get("input", "")
-                if not user_input:
+                msg = await websocket.receive_json()
+                if msg.get("cancel"):
+                    if turn_task and not turn_task.done():
+                        turn_task.cancel()
                     continue
-                try:
-                    async for event in loop.run_turn(session, user_input, confirm):
-                        await websocket.send_json(to_wire(event))
-                except ProviderError as exc:
-                    await websocket.send_json(to_wire(ErrorEvent(message=str(exc))))
+                if "approved" in msg:
+                    fut = pending.get(msg.get("id"))
+                    if fut and not fut.done():
+                        fut.set_result(bool(msg.get("approved")))
+                    continue
+                user_input = msg.get("input", "")
+                if not user_input or (turn_task and not turn_task.done()):
+                    continue  # ignore empty input, or input while a turn runs
+                turn_task = asyncio.create_task(drive_turn(user_input))
         except WebSocketDisconnect:
             # Client went away; the kernel keeps the session alive (DESIGN.md §4.2).
+            if turn_task and not turn_task.done():
+                turn_task.cancel()
             return
 
     # Serve the desktop chat UI (M4) from the same origin as the API, so the

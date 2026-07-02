@@ -76,6 +76,13 @@ class TurnComplete:
 
 
 @dataclass
+class CancelledEvent:
+    """The user interrupted the turn before it finished."""
+
+    type: Literal["cancelled"] = "cancelled"
+
+
+@dataclass
 class ErrorEvent:
     """A recoverable error surfaced to the client instead of dropping the stream."""
 
@@ -90,6 +97,7 @@ Event = (
     | PermissionRequest
     | MessageComplete
     | TurnComplete
+    | CancelledEvent
     | ErrorEvent
 )
 
