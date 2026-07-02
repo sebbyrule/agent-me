@@ -30,6 +30,7 @@ class ScriptedProvider(Provider):
 def client(tmp_path, monkeypatch):
     monkeypatch.setenv("SESSION_DIR", str(tmp_path / "sessions"))
     monkeypatch.setenv("AGENT_TOOL_POLICY", "ask")
+    monkeypatch.setenv("WORKSPACE_DIR", str(tmp_path))  # native tools sandbox here
     return TestClient(create_app())
 
 

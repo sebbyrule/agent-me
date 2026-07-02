@@ -42,11 +42,16 @@ async def test_call_list_dir(client):
     assert "pyproject.toml" in content_to_text(result["content"])
 
 
-async def test_call_read_file(client, tmp_path):
-    target = tmp_path / "note.txt"
-    target.write_text("hello mcp server", encoding="utf-8")
-    result = await client.call_tool("read_file", {"path": str(target)})
-    assert content_to_text(result["content"]) == "hello mcp server"
+async def test_call_read_file(client):
+    # The server sandboxes to its CWD (the repo root here), so read a repo file.
+    result = await client.call_tool("read_file", {"path": "pyproject.toml"})
+    assert result["isError"] is False
+    assert "agent-me" in content_to_text(result["content"])
+
+
+async def test_read_file_rejects_traversal(client):
+    result = await client.call_tool("read_file", {"path": "../../../etc/hosts"})
+    assert result["isError"] is True
 
 
 async def test_expose_all_env_reveals_write_and_exec():
