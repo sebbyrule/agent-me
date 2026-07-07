@@ -65,3 +65,25 @@ def test_sessions_persist_and_list(tmp_path, monkeypatch):
 def test_get_unknown_session_404(tmp_path, monkeypatch):
     client = _client(tmp_path, monkeypatch)
     assert client.get("/session/nope").status_code == 404
+
+
+def test_session_list_includes_title_from_first_user_message(tmp_path, monkeypatch):
+    from agent_kernel.session.store import SessionStore
+
+    store = SessionStore(tmp_path / "sessions")
+    session = store.create()
+    session.add_message("user", "Help me refactor the parser")
+    session.add_message("assistant", "Sure")
+    store.save(session)
+
+    client = _client(tmp_path, monkeypatch)
+    listed = {s["id"]: s for s in client.get("/sessions").json()["sessions"]}
+    assert listed[session.id]["title"] == "Help me refactor the parser"
+
+
+def test_delete_session(tmp_path, monkeypatch):
+    client = _client(tmp_path, monkeypatch)
+    session_id = client.post("/session").json()["id"]
+    assert client.delete(f"/session/{session_id}").status_code == 200
+    assert client.get(f"/session/{session_id}").status_code == 404
+    assert client.delete(f"/session/{session_id}").status_code == 404  # already gone
