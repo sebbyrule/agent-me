@@ -124,7 +124,10 @@ html, body {
 .msg--bot a { color: var(--accent); }
 .msg--bot code { font-family: ui-monospace, "Cascadia Code", Consolas, monospace; font-size: 0.9em; }
 .msg--bot :not(pre) > code { background: rgba(255, 255, 255, 0.09); padding: 1px 5px; border-radius: 4px; }
-.msg--bot pre.code { background: #0c0e13; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 8px 0; }
+.msg--bot pre.code { background: #0c0e13; border: 1px solid var(--border); border-radius: 8px; padding: 10px 12px; overflow-x: auto; margin: 8px 0; position: relative; }
+.copy-btn { position: absolute; top: 6px; right: 6px; background: var(--panel); color: var(--muted); border: 1px solid var(--border); border-radius: 6px; padding: 2px 8px; font-size: 11px; cursor: pointer; opacity: 0; transition: opacity 0.12s; }
+.msg--bot pre.code:hover .copy-btn { opacity: 1; }
+.copy-btn:hover { color: var(--text); border-color: var(--accent); }
 .msg--bot pre.code code { background: none; padding: 0; }
 .msg--bot .tok-keyword { color: #c792ea; }
 .msg--bot .tok-string { color: #c3e88d; }
