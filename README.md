@@ -1,5 +1,7 @@
 # agent-me
 
+[![CI](https://github.com/sebbyrule/agent-me/actions/workflows/ci.yml/badge.svg)](https://github.com/sebbyrule/agent-me/actions/workflows/ci.yml)
+
 A general-purpose AI agent framework: one long-running **Python kernel** (agent loop,
 provider abstraction, tool registry, hand-rolled MCP) with thin frontends — a **CLI**
 REPL and, later, a **Tauri desktop app**.
