@@ -50,5 +50,8 @@ async def test_read_rejects_path_traversal(tmp_path):
 
 async def test_write_rejects_absolute_escape(tmp_path):
     reg = _registry(tmp_path)
+    # An absolute path outside the workspace root (cross-platform: a drive-letter
+    # path like C:/... is not absolute on Linux, so derive one from tmp_path).
+    outside = str(tmp_path.parent / "evil.txt")
     with pytest.raises(WorkspaceError):
-        await reg.invoke("write_file", {"path": "C:/Windows/evil.txt", "content": "x"})
+        await reg.invoke("write_file", {"path": outside, "content": "x"})
