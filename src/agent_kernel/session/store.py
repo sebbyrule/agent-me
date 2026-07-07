@@ -60,14 +60,37 @@ class SessionStore:
         return self._path(session_id).exists()
 
     def list_sessions(self) -> list[dict[str, Any]]:
-        """Summaries of all persisted sessions (survives kernel restarts)."""
+        """Summaries of all persisted sessions, newest first. Each carries a
+        title derived from its first user message (survives kernel restarts)."""
+        paths = sorted(
+            self._dir.glob("*.session.json"),
+            key=lambda p: p.stat().st_mtime,
+            reverse=True,
+        )
         out: list[dict[str, Any]] = []
-        for path in sorted(self._dir.glob("*.session.json")):
+        for path in paths:
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
             except (json.JSONDecodeError, OSError):
                 continue
+            messages = data.get("messages", [])
+            title = ""
+            for m in messages:
+                if m.get("role") == "user" and isinstance(m.get("content"), str):
+                    title = m["content"].strip()
+                    break
             out.append(
-                {"id": data.get("id"), "messages": len(data.get("messages", []))}
+                {
+                    "id": data.get("id"),
+                    "messages": len(messages),
+                    "title": title[:60],
+                }
             )
         return out
+
+    def delete(self, session_id: str) -> bool:
+        path = self._path(session_id)
+        if path.exists():
+            path.unlink()
+            return True
+        return False

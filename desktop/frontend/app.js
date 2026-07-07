@@ -479,10 +479,20 @@ async function loadChats() {
     const item = document.createElement("div");
     item.className = "chat-item" + (s.id === sessionId ? " active" : "");
     item.dataset.id = s.id;
-    item.innerHTML = `<span class="cid"></span><span class="cnt"></span>`;
-    item.querySelector(".cid").textContent = s.id.slice(0, 8);
-    item.querySelector(".cnt").textContent = s.messages + " msg";
+    item.innerHTML = `<span class="cid"></span><span class="cnt"></span><button class="chat-del" title="Delete conversation">✕</button>`;
+    item.querySelector(".cid").textContent = s.title || s.id.slice(0, 8);
+    item.querySelector(".cnt").textContent = s.messages;
     item.addEventListener("click", () => selectSession(s.id));
+    item.querySelector(".chat-del").addEventListener("click", async (e) => {
+      e.stopPropagation();
+      try {
+        await fetch(`${KERNEL}/session/${s.id}`, { method: "DELETE" });
+      } catch (err) {
+        /* ignore */
+      }
+      if (s.id === sessionId) newChat();
+      else loadChats();
+    });
     box.appendChild(item);
   }
 }

@@ -246,6 +246,12 @@ def create_app(config: Config | None = None) -> FastAPI:
             return JSONResponse(status_code=404, content={"detail": "Unknown session"})
         return {"id": session.id, "messages": session.messages}
 
+    @app.delete("/session/{session_id}")
+    async def delete_session(session_id: str):
+        if not get_state().store.delete(session_id):
+            return JSONResponse(status_code=404, content={"detail": "Unknown session"})
+        return {"deleted": session_id}
+
     @app.get("/files/tree")
     async def files_tree(path: str = "") -> JSONResponse:
         root = get_state().config.workspace_dir
