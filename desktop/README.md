@@ -31,7 +31,7 @@ and an Allow/Deny prompt when the kernel's permission policy asks to confirm a r
 
 Beyond that, the UI supports: a **conversation list** (resume/switch/new, over `/sessions`);
 a **Stop** button to cancel an in-flight turn; a **provider/model switcher** in the header;
-**Markdown** with **syntax-highlighted** code blocks; **`@`** to mention a workspace file
+**Markdown** with **syntax-highlighted** code blocks (with a **Copy** button); **`@`** to mention a workspace file
 (its contents are inlined into your message); and **`/`** slash commands (`/new`, `/clear`,
 `/files`, `/model`, `/help`).
 

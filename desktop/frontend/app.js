@@ -236,6 +236,49 @@ function highlightCodeBlocks(root) {
   });
 }
 
+// Add a hover Copy button to each code block (copies the raw code text).
+function addCopyButtons(root) {
+  root.querySelectorAll("pre.code").forEach((pre) => {
+    if (pre.dataset.copy) return;
+    pre.dataset.copy = "1";
+    const btn = document.createElement("button");
+    btn.className = "copy-btn";
+    btn.type = "button";
+    btn.textContent = "Copy";
+    btn.addEventListener("click", async () => {
+      const code = pre.querySelector("code");
+      const text = code ? code.textContent : "";
+      let ok = false;
+      try {
+        if (navigator.clipboard && navigator.clipboard.writeText) {
+          await navigator.clipboard.writeText(text);
+          ok = true;
+        }
+      } catch (e) {
+        ok = false;
+      }
+      if (!ok) {
+        // Fallback for non-secure contexts / no clipboard permission.
+        try {
+          const ta = document.createElement("textarea");
+          ta.value = text;
+          ta.style.position = "fixed";
+          ta.style.opacity = "0";
+          document.body.appendChild(ta);
+          ta.select();
+          ok = document.execCommand("copy");
+          document.body.removeChild(ta);
+        } catch (e) {
+          ok = false;
+        }
+      }
+      btn.textContent = ok ? "Copied" : "Failed";
+      setTimeout(() => (btn.textContent = "Copy"), 1200);
+    });
+    pre.appendChild(btn);
+  });
+}
+
 function onEvent(event) {
   switch (event.type) {
     case "text_delta": {
@@ -257,6 +300,7 @@ function onEvent(event) {
     case "message_complete":
       if (currentBot) currentBot.classList.remove("cursor");
       highlightCodeBlocks(log);
+      addCopyButtons(log);
       currentBot = null;
       break;
     case "turn_complete":
@@ -394,6 +438,7 @@ function appendBot(text) {
   div.className = "msg msg--bot";
   div.innerHTML = renderMarkdown(text);
   highlightCodeBlocks(div);
+  addCopyButtons(div);
   log.appendChild(div);
 }
 
